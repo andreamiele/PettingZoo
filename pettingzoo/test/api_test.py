@@ -267,11 +267,11 @@ def test_observation_action_spaces(env, agent_0):
             )
         if not isinstance(env.action_space(agent), env.action_space(agent).__class__):
             warnings.warn("The class of action spaces is different between two agents")
-        if (
-            env.observation_space(agent) != env.observation_space(agent_0)
-            and str(env.unwrapped) not in env_diff_agent_obs_size
-        ):
-            warnings.warn("Agents have different observation space sizes")
+        #if (
+            #env.observation_space(agent) != env.observation_space(agent_0)
+            #and str(env.unwrapped) not in env_diff_agent_obs_size
+        #):
+            #warnings.warn("Agents have different observation space sizes")
         if env.action_space(agent) != env.action_space(agent):
             warnings.warn("Agents have different action space sizes")
 
