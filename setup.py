@@ -18,4 +18,4 @@ def get_version():
     raise RuntimeError("bad version data in __init__.py")
 
 
-setup(name="pettingzoo", version=get_version())
+setup(name="pettingzooo", version=get_version())

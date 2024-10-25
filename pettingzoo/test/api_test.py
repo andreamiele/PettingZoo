@@ -218,6 +218,7 @@ def test_action_mask(action_mask, env_name=None):
 
 def test_observation_action_spaces(env, agent_0):
     for agent in env.agents:
+
         assert isinstance(
             env.observation_space(agent), gymnasium.spaces.Space
         ), "Observation space for each agent must extend gymnasium.spaces.Space"
@@ -267,11 +268,11 @@ def test_observation_action_spaces(env, agent_0):
             )
         if not isinstance(env.action_space(agent), env.action_space(agent).__class__):
             warnings.warn("The class of action spaces is different between two agents")
-        #if (
-            #env.observation_space(agent) != env.observation_space(agent_0)
-            #and str(env.unwrapped) not in env_diff_agent_obs_size
-        #):
-            #warnings.warn("Agents have different observation space sizes")
+        # if (
+        # env.observation_space(agent) != env.observation_space(agent_0)
+        # and str(env.unwrapped) not in env_diff_agent_obs_size
+        # ):
+        # warnings.warn("Agents have different observation space sizes")
         if env.action_space(agent) != env.action_space(agent):
             warnings.warn("Agents have different action space sizes")
 
@@ -424,6 +425,9 @@ def _test_observation_space_compatibility(
         ), f"dtype for observation at [{']['.join(recursed_keys)}] is {seen.dtype}, but observation space specifies {expected.dtype}."
 
 
+from tqdm import tqdm
+
+
 def play_test(env, observation_0, num_cycles):
     """
     plays through environment and does dynamic checks to make
@@ -441,18 +445,26 @@ def play_test(env, observation_0, num_cycles):
     has_finished = set()
     generated_agents = set()
     accumulated_rewards = defaultdict(int)
-    for agent in env.agent_iter(env.num_agents * num_cycles):
+    for agent in tqdm(
+        env.agent_iter(env.num_agents * num_cycles), total=env.num_agents * num_cycles
+    ):
         generated_agents.add(agent)
+        # print(agent)
         assert (
             agent not in has_finished
         ), "agents cannot resurect! Generate a new agent with a new name."
+        # print(env.infos, "from play test")
         assert isinstance(
             env.infos[agent], dict
         ), "an environment agent's info must be a dictionary"
+
         prev_observe, reward, terminated, truncated, info = env.last()
+        print(agent)
         if terminated or truncated:
             action = None
+
         elif isinstance(prev_observe, dict) and "action_mask" in prev_observe:
+
             action = env.action_space(agent).sample(prev_observe["action_mask"])
         elif "action_mask" in info:
             action = env.action_space(agent).sample(info["action_mask"])
@@ -476,16 +488,17 @@ def play_test(env, observation_0, num_cycles):
         accumulated_rewards[agent] = 0
 
         env.step(action)
-
+        # print("reward: ",env.rewards)
         for a, rew in env.rewards.items():
             accumulated_rewards[a] += rew
-
+        # print("after eq: ",accumulated_rewards)
         assert env.num_agents == len(
             env.agents
         ), "env.num_agents is not equal to len(env.agents)"
         assert set(env.rewards.keys()) == (
             set(env.agents)
         ), "agents should not be given a reward if they were terminated or truncated last turn"
+
         assert set(env.terminations.keys()) == (
             set(env.agents)
         ), "agents should not be given a termination if they were terminated or truncated last turn"
@@ -502,21 +515,30 @@ def play_test(env, observation_0, num_cycles):
 
         if not env.agents:
             break
-
-        assert env.observation_space(agent).contains(
-            prev_observe
-        ), "Out of bounds observation: " + str(prev_observe)
+        assert env.observation_space(agent).contains(prev_observe), (
+            "Out of bounds observation: "
+            + str(prev_observe)
+            + " for agent "
+            + agent
+            + "with observation space "
+            + str(env.observation_space(agent))
+            + "shape of observation: "
+            + str(env.observation_space(agent).shape)
+            + "shape of prev_observe: "
+            + str(len(prev_observe))
+        )
 
         _test_observation_space_compatibility(
             env.observation_space(agent), prev_observe, recursed_keys=[]
         )
 
         test_observation(prev_observe, observation_0, str(env.unwrapped))
+
         if not isinstance(env.infos[env.agent_selection], dict):
             warnings.warn(
                 "The info of each agent should be a dict, use {} if you aren't using info"
             )
-
+    print("finished play test")
     if not env.agents:
         assert (
             has_finished == generated_agents
@@ -621,9 +643,10 @@ def api_test(env, num_cycles=1000, verbose_progress=False):
     test_observation_action_spaces(env, agent_0)
 
     progress_report("Finished test_observation_action_spaces")
-
+    print("Starting play test")
+    print("-----------------")
+    print("\n \n\n\n\n")
     play_test(env, observation_0, num_cycles)
-
     progress_report("Finished play test")
 
     assert isinstance(env.rewards, dict), "rewards must be a dict"
